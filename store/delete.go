@@ -2,7 +2,7 @@ package store
 
 import (
 	"fmt"
-	"vmware/command"
+	"kv_repl/command"
 )
 
 // Delete deletes the value for the given key

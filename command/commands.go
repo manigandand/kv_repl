@@ -2,8 +2,8 @@ package command
 
 import (
 	"fmt"
+	"kv_repl/utils"
 	"strings"
-	"vmware/utils"
 )
 
 // CMD is a custom type for all available commands

@@ -3,12 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"kv_repl/command"
+	"kv_repl/store"
+	"kv_repl/utils"
 	"os"
 	"os/signal"
 	"strings"
-	"vmware/command"
-	"vmware/store"
-	"vmware/utils"
 )
 
 var (

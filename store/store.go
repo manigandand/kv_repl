@@ -2,7 +2,7 @@ package store
 
 import (
 	"fmt"
-	"vmware/command"
+	"kv_repl/command"
 )
 
 var (
@@ -29,7 +29,7 @@ func InitStore() {
 func ExecCmd(cmd *command.Command) error {
 	switch cmd.Name {
 	case command.CMDRead:
-		return store.Read(cmd)
+		return store.Read(cmd, false)
 	case command.CMDWrite:
 		return store.Write(cmd, false)
 	case command.CMDDelete:

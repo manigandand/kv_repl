@@ -2,7 +2,7 @@ package store
 
 import (
 	"fmt"
-	"vmware/command"
+	"kv_repl/command"
 )
 
 func (s *Store) hasActiveTransaction() bool {
@@ -10,16 +10,35 @@ func (s *Store) hasActiveTransaction() bool {
 }
 
 type transaction struct {
-	level          int
-	mem            map[string]string
-	actionableCmds []*command.Command
+	level             int
+	mem               map[string]string
+	delmem            map[string]string
+	actionableCmds    []*command.Command
+	parentTransaction *transaction
+	root              *Store // root available for first child
+}
+
+func (t *transaction) haveReachedFirst() bool {
+	return t.level == 1
 }
 
 // Read reads the value for the given key
 func (t *transaction) Read(cmd *command.Command) error {
+	if _, ok := t.delmem[cmd.Key]; ok {
+		return fmt.Errorf("key not found: %s", cmd.Key)
+	}
+
 	val, ok := t.mem[cmd.Key]
 	if !ok {
-		return fmt.Errorf("key not found: %s", cmd.Key)
+		// check if the parent transaction has the key available
+		// untill we reach the root
+		// we need to know the [dl] ---->
+		if t.haveReachedFirst() {
+			return t.root.Read(cmd, true)
+		}
+
+		return t.parentTransaction.Read(cmd)
+		// return fmt.Errorf("key not found: %s", cmd.Key)
 	}
 	fmt.Println(val)
 
@@ -28,6 +47,11 @@ func (t *transaction) Read(cmd *command.Command) error {
 
 // Write sets/updates the value for the given key
 func (t *transaction) Write(cmd *command.Command) error {
+	if _, ok := t.delmem[cmd.Key]; ok {
+		// remove the key from delete map
+		delete(t.delmem, cmd.Key)
+	}
+
 	t.mem[cmd.Key] = cmd.Value
 
 	// add the command to the actionable commands
@@ -38,13 +62,32 @@ func (t *transaction) Write(cmd *command.Command) error {
 
 // Delete deletes the value for the given key
 func (t *transaction) Delete(cmd *command.Command) error {
-	if _, ok := t.mem[cmd.Key]; !ok {
-		return fmt.Errorf("key not found: %s", cmd.Key)
-	}
-	delete(t.mem, cmd.Key)
-
 	// add the command to the actionable commands
+	// write key1 "val"
+	// start
+	// read key1
+	// del key1 <- it should actally delete
+	// read key1 <- read 404
+	// abort -> TODO: make a reverse change.... pre val we need to know...
+	// ---------------> while del, get the previous key val and store for reverse action
+	// ---------------> write, get the previous key val and store for reverse action
+	// read key1
+	// ------------
+
 	t.actionableCmds = append(t.actionableCmds, cmd)
+
+	// add it to the temp
+	t.delmem[cmd.Key] = "" //
+
+	// if _, ok := t.mem[cmd.Key]; !ok {
+	// 	// if t.haveReachedFirst() {
+	// 	// 	return t.root.Delete(cmd, true)
+	// 	// }
+
+	// 	// return t.parentTransaction.Delete(cmd)
+	// 	// return fmt.Errorf("key not found: %s", cmd.Key)
+	// }
+	// delete(t.mem, cmd.Key)
 
 	return nil
 }
@@ -54,7 +97,14 @@ func (s *Store) Start(cmd *command.Command) error {
 	trans := &transaction{
 		level:          len(s.transactions) + 1,
 		mem:            make(map[string]string),
+		delmem:         make(map[string]string),
 		actionableCmds: make([]*command.Command, 0),
+	}
+
+	// assign the parent transaction or the root
+	trans.root = s
+	if len(s.transactions) != 0 {
+		trans.parentTransaction = s.transactions[len(s.transactions)-1]
 	}
 
 	s.transactions = append(s.transactions, trans)
@@ -119,6 +169,9 @@ func (s *Store) Abort(cmd *command.Command) error {
 	if !s.hasActiveTransaction() {
 		return fmt.Errorf("no active transaction")
 	}
+
+	// reverse change...
+	// we store more info of the cmd's previous state
 
 	// remove the current transaction from the stack
 	s.transactions = s.transactions[:len(s.transactions)-1]

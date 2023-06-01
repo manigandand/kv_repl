@@ -2,12 +2,12 @@ package store
 
 import (
 	"fmt"
-	"vmware/command"
+	"kv_repl/command"
 )
 
 // Read reads the value for the given key
-func (s *Store) Read(cmd *command.Command) error {
-	if s.hasActiveTransaction() {
+func (s *Store) Read(cmd *command.Command, ingoreTrans bool) error {
+	if s.hasActiveTransaction() && ingoreTrans {
 		// read from the current transaction mem
 		return s.transactions[len(s.transactions)-1].Read(cmd)
 	}

@@ -10,7 +10,7 @@
 ## How to run
 
 ```shell
-go build . && ./vmware
+go build . && ./kv_repl
 ```
 
 ## Sample run

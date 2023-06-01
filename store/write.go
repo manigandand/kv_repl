@@ -1,7 +1,7 @@
 package store
 
 import (
-	"vmware/command"
+	"kv_repl/command"
 )
 
 // Write sets/updates the value for the given key
