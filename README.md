@@ -1,12 +1,3 @@
-## Edge cases:
-
-1. Delete operation:
-   - Root Store Has a key `name`
-   - start a new transaction
-   - run `delete name` -> error: key not found, so its not a valid run/command
-   - commit
-   - in root store, `name` is still exists.
-
 ## How to run
 
 ```shell
